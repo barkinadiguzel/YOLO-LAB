@@ -1,34 +1,37 @@
 """
 Fine-tune a YOLOv8 segmentation model on a custom dataset.
-This example uses the COCO8 segmentation dataset.
+
+This script loads a pre-trained segmentation model (yolov8n-seg.pt)
+and fine-tunes it using your dataset configuration (custom_seg.yaml).
+Make sure your dataset is properly structured in YOLO format.
 """
 
 from ultralytics import YOLO
 
-# Load a pre-trained YOLOv8 segmentation model
-model = YOLO('yolov8n-seg.pt')  # nano segmentation model
+# Load pre-trained segmentation model
+model = YOLO('yolov8n-seg.pt')
 
-# Train / Fine-tune the model
+# Fine-tune the model on a custom dataset
 results = model.train(
-    data='data/coco8-seg.yaml',  # dataset config with segmentation masks
-    epochs=10,
-    imgsz=640,
-    batch=2,
-    device='cpu',                # change to '0' if GPU available
-    project='runs/segment',
-    name='yolov8_segmentation'
+    data='data/custom_seg.yaml',   # Path to your dataset YAML
+    epochs=20,                     # Number of epochs
+    imgsz=640,                     # Image size
+    batch=4,                       # Batch size
+    device='cpu',                  # Use 'cuda' if GPU available
+    project='runs/segment',        # Folder for saving runs
+    name='custom_seg_finetune'     # Name of this training run
 )
 
-# Load the trained weights
-trained_model = YOLO('runs/segment/yolov8_segmentation5/weights/best.pt')
+# Load the best fine-tuned model
+fine_tuned_model = YOLO('runs/segment/custom_seg_finetune/weights/best.pt')
 
-# Optional: test on a sample image
-results = trained_model.predict(
-    source='data/sample_images/sample1.jpg',
+# Test on a sample image
+results = fine_tuned_model.predict(
+    source='data/sample_images/sample2.jpg',  # Example test image
     conf=0.4,
     save=True,
     show_labels=True,
     show_conf=True
 )
 
-print("Segmentation training and inference complete.")
+print("Segmentation fine-tuning and prediction complete.")
