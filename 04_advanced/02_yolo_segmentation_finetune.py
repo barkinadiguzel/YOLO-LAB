@@ -4,6 +4,11 @@ Fine-tune a YOLOv8 segmentation model on a custom dataset.
 This script loads a pre-trained segmentation model (yolov8n-seg.pt)
 and fine-tunes it using your dataset configuration (custom_seg.yaml).
 Make sure your dataset is properly structured in YOLO format.
+
+NOTE:
+The custom segmentation dataset is NOT included in this repository.
+You must provide your own dataset and configuration file (e.g., data/custom_seg.yaml)
+before running this script.
 """
 
 from ultralytics import YOLO
