@@ -1,21 +1,32 @@
 """
-03_yolo_export_onnx_tflite.py
-Export a trained YOLOv8 model to ONNX and TFLite formats.
+Export a trained YOLOv8 detection model to ONNX format.
+
+This script:
+1. Loads a fine-tuned YOLOv8 model (.pt file)
+2. Converts it to ONNX format for cross-platform deployment
+3. Saves the exported model inside the 'exports' directory
+
+The ONNX format allows integration with frameworks like:
+- ONNX Runtime (C++, Python, Android, iOS)
+- OpenCV DNN module
+- TensorRT or other inference engines
 """
 
 from ultralytics import YOLO
 import os
 
-# Load trained YOLO model
-model = YOLO("runs/detect/yolov8_detection/weights/best.pt")
+# Path to the trained YOLOv8 model (.pt file)
+model_path = r"runs\detect\yolov8_detection\weights\best.pt"
 
-# Create export directory
+# Load the YOLO model
+model = YOLO(model_path)
+
+# Create the output directory for exported models
 os.makedirs("exports", exist_ok=True)
 
-# Export to ONNX
-model.export(format="onnx", imgsz=640)
-print("Exported to ONNX format.")
+print("Exporting model to ONNX format...")
 
-# Export to TFLite
-model.export(format="tflite", imgsz=640)
-print("Exported to TFLite format.")
+# Export the model to ONNX
+onnx_path = model.export(format="onnx", opset=12, dynamic=True, simplify=True)
+
+print(f"ONNX export complete: {onnx_path}")
