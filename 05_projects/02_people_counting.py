@@ -1,4 +1,14 @@
-# 02_people_counting.py
+"""
+02_people_counting.py
+
+Counts people in a video using a YOLOv8 model.
+
+- Loads a YOLOv8 model.
+- Reads a video frame by frame.
+- Detects people and draws bounding boxes.
+- Displays the number of people on each frame.
+- Press 'q' to quit.
+"""
 import cv2
 from ultralytics import YOLO
 
@@ -14,10 +24,10 @@ while True:
     if not ret:
         break
 
-    # Perform prediction on the current frame
+    # Predict objects in the frame
     results = model.predict(frame, conf=0.4, show=False)
 
-    # Count people in the frame
+    # Count people
     person_count = 0
     for r in results:
         for box in r.boxes:
@@ -25,20 +35,15 @@ while True:
             if model.names[cls] == "person":
                 person_count += 1
                 x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-                # Draw bounding box around detected person
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-    # Display the person count on the frame
+    # Show count on frame
     cv2.putText(frame, f"People: {person_count}", (20, 50),
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
-
-    # Show the frame
     cv2.imshow("People Counting", frame)
 
-    # Press 'q' to quit
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-# Release resources
 cap.release()
 cv2.destroyAllWindows()
