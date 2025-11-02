@@ -1,67 +1,44 @@
-from ultralytics import YOLO
-from deep_sort_realtime.deepsort_tracker import DeepSort
+# 02_people_counting.py
 import cv2
-import numpy as np
+from ultralytics import YOLO
 
-# Load model
+# Load the YOLOv8 model
 model = YOLO("runs/detect/yolov8_detection/weights/best.pt")
 
-# Initialize tracker
-tracker = DeepSort(max_age=30)
-
-cap = cv2.VideoCapture("data/sample_videos/people_walk.mp4")
-fps = cap.get(cv2.CAP_PROP_FPS)
-width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-out = cv2.VideoWriter("runs/detect/people_counting.mp4",
-                      cv2.VideoWriter_fourcc(*"mp4v"),
-                      fps, (width, height))
-
-# Benzersiz ID'leri saklamak için set
-unique_ids = set()
+# Video source
+video_path = "data/sample_videos/people_walk.mp4"
+cap = cv2.VideoCapture(video_path)
 
 while True:
     ret, frame = cap.read()
     if not ret:
         break
 
+    # Perform prediction on the current frame
     results = model.predict(frame, conf=0.4, show=False)
 
-    # Prepare detections for DeepSort
-    detections = []
+    # Count people in the frame
+    person_count = 0
     for r in results:
         for box in r.boxes:
-            x1, y1, x2, y2 = box.xyxy[0].tolist()
-            conf = float(box.conf[0])
             cls = int(box.cls[0])
-            if cls == 0:  # only person
-                detections.append(([x1, y1, x2, y2], conf, cls))
+            if model.names[cls] == "person":
+                person_count += 1
+                x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                # Draw bounding box around detected person
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-    # Update tracks
-    tracks = tracker.update_tracks(detections, frame=frame)
+    # Display the person count on the frame
+    cv2.putText(frame, f"People: {person_count}", (20, 50),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
 
-    for t in tracks:
-        if not t.is_confirmed():
-            continue
-        tid = t.track_id
-        
-        # Yeni ID'yi kaydet
-        unique_ids.add(tid)
-        
-        x1, y1, x2, y2 = map(int, t.to_ltrb())
-        cv2.rectangle(frame, (x1, y1), (x2, y2), (0,255,0), 2)
-        cv2.putText(frame, f"ID:{tid}", (x1, y1-10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+    # Show the frame
+    cv2.imshow("People Counting", frame)
 
-    # Şu anki kişi sayısı ve toplam geçen kişi sayısı
-    cv2.putText(frame, f"Current: {len(tracks)}", (10, 30),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(frame, f"Total Passed: {len(unique_ids)}", (10, 70),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+    # Press 'q' to quit
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
-    out.write(frame)
-
+# Release resources
 cap.release()
-out.release()
 cv2.destroyAllWindows()
-print(f"Done. Total people passed: {len(unique_ids)}")
