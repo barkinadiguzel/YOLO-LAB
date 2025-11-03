@@ -1,68 +1,69 @@
-# 05_object_trail_tracker.py
-# Tracks a cellphone in real time using YOLOv8 and visualizes its motion trail.
-# As the phone moves, a red trail follows its path dynamically.
+"""
+05_object_trail_tracker.py
+--------------------------------
+ Real-Time Phone Tracker with Trail
+
+This code uses a YOLOv8 model to detect a phone in a live camera feed.
+When the phone is detected, it draws a bounding box around it and
+tracks its movement across frames. The phone’s path is visualized
+as a trail that follows its previous positions on the screen.
+
+Basically: move your phone in front of the camera, and you’ll see a
+colored line showing where it’s been — like a motion trace.
+"""
 
 from ultralytics import YOLO
 import cv2
 import numpy as np
 
-# Load YOLOv8 model (lightweight version)
+# Load YOLOv8 model
 model = YOLO("yolov8n.pt")
 
-# List to store previous positions of the tracked object (the trail)
-trail_points = []
-
-# Capture video from the default camera
+# Start webcam
 cap = cv2.VideoCapture(0)
 
-# Class labels in YOLO
-class_names = model.names
-target_class = "cell phone"  # Only track this object type
+# List to store trail points
+trail_points = []
+MAX_TRAIL_LENGTH = 30  # Limit trail length
 
 while True:
     ret, frame = cap.read()
     if not ret:
         break
 
-    # Run YOLO inference on the frame
+    # Run YOLO inference
     results = model(frame, verbose=False)
-    detections = results[0].boxes
 
-    center = None  # Object center point to track
+    # Process detections
+    for r in results:
+        for box in r.boxes:
+            cls_id = int(box.cls[0])
+            label = model.names[cls_id]
 
-    # Process each detection
-    for box in detections:
-        cls_id = int(box.cls[0])
-        cls_name = class_names[cls_id]
+            # Only track phone
+            if label == "cell phone":
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
 
-        if cls_name == target_class:
-            x1, y1, x2, y2 = map(int, box.xyxy[0])
-            center = ((x1 + x2) // 2, (y1 + y2) // 2)
+                # Store trail points
+                trail_points.append((cx, cy))
+                if len(trail_points) > MAX_TRAIL_LENGTH:
+                    trail_points.pop(0)
 
-            # Draw bounding box and label
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(frame, cls_name, (x1, y1 - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                # Draw phone box and center
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.circle(frame, (cx, cy), 5, (0, 0, 255), -1)
 
-    # Add the new center to the trail
-    if center:
-        trail_points.append(center)
-
-    # Limit the length of the trail to avoid overflow
-    if len(trail_points) > 200:
-        trail_points.pop(0)
-
-    # Draw the trail line
+    # Draw trail line
     for i in range(1, len(trail_points)):
-        if trail_points[i - 1] is None or trail_points[i] is None:
-            continue
-        thickness = int(np.sqrt(200 / float(i + 1)) * 2)
-        cv2.line(frame, trail_points[i - 1], trail_points[i], (0, 0, 255), thickness)
+        cv2.line(frame, trail_points[i - 1], trail_points[i], (255, 0, 0), 2)
 
-    # Display result
-    cv2.imshow("Cell Phone Tracker", frame)
+    # Label text
+    cv2.putText(frame, "Tracking: Cell Phone", (10, 30),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
-    # Exit on 'q' key
+    cv2.imshow("Phone Tracker", frame)
+
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
