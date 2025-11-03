@@ -1,5 +1,10 @@
-ultralytics>=8.0.0
-torch>=2.0.0
-numpy
-opencv-python
-matplotlib
+ultralytics==8.1.12
+opencv-python==4.8.1.78
+opencv-contrib-python==4.8.1.78
+numpy==1.26.5
+mediapipe==0.10.21
+SpeechRecognition==3.10.0
+protobuf==4.25.3
+PyAudio==0.2.13
+
+
